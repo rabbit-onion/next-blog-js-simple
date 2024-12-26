@@ -22,15 +22,34 @@ const PostDetailPage = ({ params }) => {
         setPost(res.data);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((error) => {
         console.error(error);
         setLoading(false);
       });
   }, [resolvedParams.id, router]);
 
+  const handleDelete = async () => {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+
+    try {
+      const res = await axios.delete(`/api/posts/${resolvedParams.id}`);
+
+      // 삭제 성공 시 목록으로 이동
+      if (res.status === 200) {
+        router.push('/posts');
+      } else {
+        alert('게시글 삭제 실패');
+      }
+    } catch (error) {
+      console.log(error);
+      alert('오류 발생');
+    }
+  };
+
   if (loading) {
     return <div>로딩 중...</div>;
   }
+  if (!post) return <div>게시글을 찾을 수 없습니다.</div>;
 
   return (
     <div className='container mx-auto'>
@@ -39,8 +58,12 @@ const PostDetailPage = ({ params }) => {
       <span className='text-gray-400'>{post.createdAt}</span>
       <div className='flex'>
         <Link href={'/posts'}>목록</Link>
-        <button className='ml-auto'>수정</button>
-        <button>삭제</button>
+        <Link href={`/posts/${resolvedParams.id}/edit`} className='ml-auto bg-gray-200 p-3'>
+          수정
+        </Link>
+        <button onClick={handleDelete} className='bg-gray-200 p-3'>
+          삭제
+        </button>
       </div>
     </div>
   );
