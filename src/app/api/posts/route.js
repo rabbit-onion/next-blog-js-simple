@@ -1,21 +1,32 @@
-import { NextResponse } from 'next/server';
-import { posts } from '@/data/posts';
+import connectDB from "@/lib/mongodb";
+import Post from "@/models/Post";
+import { NextResponse } from "next/server";
 
 // 전체 글 조회 - GET 요청 처리
 export async function GET() {
-  // 성공
   try {
+    // mongodb 연결
+    await connectDB();
+
+    // post 모델을 이용해 전체 글 조회
+    // sort() 메서드를 이용해 최신 글이 위로 오도록 정렬
+    const posts = await Post.find({}).sort({ createdAt: -1 });
+
     return NextResponse.json(posts);
   } catch (error) {
-    // 실패
-    return NextResponse.json({ error: '게시글을 불러오는데 실패했습니다.' }, { status: 500 });
+    return NextResponse.json(
+      { error: "게시글을 불러오는데 실패했습니다." },
+      { status: 500 }
+    );
   }
-  // 성공/실패 여부 상관없이 : finally{} 사용
 }
 
 // 글 생성 - POST 요청 처리
 export async function POST(req) {
   try {
+    // mongodb 연결
+    await connectDB();
+
     // data = {title: "새 글 제목", content: "새 글 내용"}
     const data = await req.json();
 
@@ -23,28 +34,19 @@ export async function POST(req) {
     if (!data.title || !data.content) {
       return NextResponse.json(
         // {메시지}, {상태}
-        { error: '제목과 내용은 필수입니다.' },
+        { error: "제목과 내용은 필수입니다." },
         { status: 400 } // bad request
       );
     }
 
-    // newPost 객체 생성
-    const newPost = {
-      id: posts.length + 1,
-      title: data.title,
-      content: data.content,
-      createdAt: new Date().toLocaleDateString(),
-    };
-
-    // 서버의 데이터베이스(posts.js)에 새로운 데이터 추가
-    posts.push(newPost);
+    const newPost = await Post.create(data);
 
     // 클라이언트에게 새 글 응답
     return NextResponse.json(newPost, { status: 201 });
   } catch (error) {
     return NextResponse.json(
       // client 전달 메시지
-      { error: '게시글을 생성하는 데 실패했습니다.' },
+      { error: "게시글을 생성하는 데 실패했습니다." },
       // server에 상태 전달
       { status: 500 }
     );
